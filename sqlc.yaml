@@ -1,0 +1,9 @@
+version: "2"
+sql:
+  - engine: "postgresql"
+    queries: "interno/query.sql"
+    schema: "prisma/migrations/0_init/migration.sql"
+    gen:
+      go:
+        package: "db"
+        out: "interno/db"
