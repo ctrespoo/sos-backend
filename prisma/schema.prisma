@@ -1,7 +1,7 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 // npx prisma db push --skip-generate 
-//npx prisma migrate dev --name i -- --skip-generate
+//npx prisma migrate dev --name i --skip-generate
 //npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > prisma/migrations/0_init/migration.sql
 //npx prisma migrate resolve --applied 0_init
 //docker run --name some-postgres --restart always -p 5432:5432 -e POSTGRES_PASSWORD=6GKePzfr56sBUDC9ctBNq8H36QJcvAsYVqKpiEbF -d postgres:15.3-alpine3.18 -c shared_buffers=256MB -c max_connections=200
@@ -19,9 +19,34 @@ model Usuario {
   id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   email      String   @unique
   nome       String
+  telefone   String   @unique
   senha      String
-  created_at DateTime @default(dbgenerated("CURRENT_TIMESTAMP"))
+  created_at DateTime @default(dbgenerated("CURRENT_TIMESTAMP SET TIME ZONE 'America/Sao_Paulo'"))
   updated_at DateTime @default(dbgenerated("CURRENT_TIMESTAMP")) @updatedAt
 
   @@map("usuarios")
+}
+
+enum TipoUnidadeMedida {
+  KG
+  G
+}
+
+model Produto {
+  id                String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nome              String
+  sku               String
+  barcode           String
+  descricao         String
+  preco             Decimal           @db.Decimal(15, 2)
+  unidade_medida    TipoUnidadeMedida
+  quantidade_pacote Int
+  peso              Decimal           @db.Decimal(15, 2)
+  quantidade        Int
+  ativo             Boolean           @default(false)
+  ordem             Int
+  created_at        DateTime          @default(dbgenerated("CURRENT_TIMESTAMP"))
+  updated_at        DateTime          @default(dbgenerated("CURRENT_TIMESTAMP")) @updatedAt
+
+  @@map("produtos")
 }

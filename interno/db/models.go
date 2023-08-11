@@ -14,6 +14,7 @@ type Usuario struct {
 	ID        uuid.UUID
 	Email     string
 	Nome      string
+	Telefone  string
 	Senha     string
 	CreatedAt time.Time
 	UpdatedAt time.Time

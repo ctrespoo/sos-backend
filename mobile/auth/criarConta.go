@@ -16,12 +16,9 @@ import (
 type user struct {
 	Nome        string `json:"nome"`
 	Email       string `json:"email"`
+	Telefone    string `json:"telefone"`
 	Senha       string `json:"senha"`
 	RepitaSenha string `json:"repitaSenha"`
-}
-
-type enviarToken struct {
-	Token string `json:"token"`
 }
 
 func CriarConta(db *interno.Queries, client *auth.Client) http.HandlerFunc {
@@ -35,6 +32,11 @@ func CriarConta(db *interno.Queries, client *auth.Client) http.HandlerFunc {
 		if user.Nome == "" {
 			w.WriteHeader(400)
 			json.NewEncoder(w).Encode(&model.RespErro{Erro: 400, Mensagem: "Nome não pode ser vazia"})
+			return
+		}
+		if user.Telefone == "" {
+			w.WriteHeader(400)
+			json.NewEncoder(w).Encode(&model.RespErro{Erro: 400, Mensagem: "Telefone não pode ser vazio"})
 			return
 		}
 		if user.Email == "" {
@@ -67,9 +69,10 @@ func CriarConta(db *interno.Queries, client *auth.Client) http.HandlerFunc {
 		}
 
 		res, err := db.CriarUsuario(r.Context(), interno.CriarUsuarioParams{
-			Nome:  user.Nome,
-			Email: user.Email,
-			Senha: string(hashSenha),
+			Telefone: user.Telefone,
+			Nome:     user.Nome,
+			Email:    user.Email,
+			Senha:    string(hashSenha),
 		})
 		if err != nil {
 			log.Println(err)
@@ -80,6 +83,7 @@ func CriarConta(db *interno.Queries, client *auth.Client) http.HandlerFunc {
 
 		// Cria usuario no firebase
 		params := (&auth.UserToCreate{}).
+			PhoneNumber(user.Telefone).
 			UID(res.ID.String()).
 			Email(res.Email).
 			EmailVerified(false).
@@ -106,14 +110,8 @@ func CriarConta(db *interno.Queries, client *auth.Client) http.HandlerFunc {
 			json.NewEncoder(w).Encode(&model.RespErro{Erro: 500, Mensagem: "Erro token"})
 			return
 		}
-		token, err := client.CustomTokenWithClaims(r.Context(), u.UID, claims)
-		if err != nil {
-			log.Println(err)
-			w.WriteHeader(400)
-			json.NewEncoder(w).Encode(&model.RespErro{Erro: 500, Mensagem: "Erro token"})
-			return
-		}
 
-		w.Write([]byte(token))
+		w.WriteHeader(201)
+		w.Write([]byte("Sucesso"))
 	}
 }
