@@ -1,21 +1,32 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"log"
 	"net/http"
 	"os"
 	"time"
 
-	auth "sos/backend/mobile/auth"
+	authm "sos/backend/mobile/auth"
 
 	interno "sos/backend/interno/db"
 
+	global "sos/backend/global"
+
+	firebase "firebase.google.com/go/v4"
+	"firebase.google.com/go/v4/auth"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/go-chi/jwtauth/v5"
 	_ "github.com/lib/pq"
+	"google.golang.org/api/option"
 )
+
+func init() {
+	global.TokenAuth = jwtauth.New("HS256", []byte("secret"), nil) // replace with secret key
+}
 
 func main() {
 
@@ -29,12 +40,24 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer db.Close()
 	err = db.Ping()
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	dbtx := interno.New(db)
+
+	ctx := context.Background()
+	opt := option.WithCredentialsFile("./firebase.json")
+	app, err := firebase.NewApp(ctx, nil, opt)
+	if err != nil {
+		log.Fatal(err)
+	}
+	cliente, err := app.Auth(ctx)
+	if err != nil {
+		log.Fatalf("error getting Auth client: %v\n", err)
+	}
 
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
@@ -51,9 +74,11 @@ func main() {
 		MaxAge:           300,
 	}))
 
+	r.Get("/", home(cliente))
+
 	r.Route("/mobile/api/v1", func(r chi.Router) {
-		r.Post("/auth/login", auth.Login(dbtx))
-		r.Post("/auth/registrar", auth.CriarConta(dbtx))
+		r.Post("/auth/login", authm.Login(dbtx))
+		r.Post("/auth/registrar", authm.CriarConta(dbtx, cliente))
 		r.Group(func(r chi.Router) {
 
 		})
@@ -70,4 +95,31 @@ func main() {
 
 	log.Println("Listening on 20003")
 	log.Fatal(srv.ListenAndServe())
+}
+
+func home(client *auth.Client) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		uid := "f866ba49-e72a-4ec0-90c5-e3d014722be4"
+
+		claims := map[string]interface{}{
+			"premiumAccount": true,
+		}
+
+		err := client.SetCustomUserClaims(r.Context(), uid, claims)
+		if err != nil {
+			log.Fatalf("error setting custom claims %v\n", err)
+		}
+		u, err := client.GetUser(r.Context(), uid)
+		if err != nil {
+			log.Fatalf("error getting user %s: %v\n", uid, err)
+		}
+
+		token, err := client.CustomTokenWithClaims(r.Context(), uid, claims)
+		if err != nil {
+			log.Fatalf("error minting custom token: %v\n", err)
+		}
+
+		log.Printf("Successfully fetched user data: %v\n", u.CustomClaims)
+		w.Write([]byte(token))
+	}
 }

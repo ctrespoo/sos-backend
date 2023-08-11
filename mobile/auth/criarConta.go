@@ -9,6 +9,7 @@ import (
 
 	interno "sos/backend/interno/db"
 
+	"firebase.google.com/go/v4/auth"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -19,7 +20,11 @@ type user struct {
 	RepitaSenha string `json:"repitaSenha"`
 }
 
-func CriarConta(db *interno.Queries) http.HandlerFunc {
+type enviarToken struct {
+	Token string `json:"token"`
+}
+
+func CriarConta(db *interno.Queries, client *auth.Client) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		w.Header().Set("Content-Type", "application/json")
@@ -47,7 +52,13 @@ func CriarConta(db *interno.Queries) http.HandlerFunc {
 			json.NewEncoder(w).Encode(&model.RespErro{Erro: 400, Mensagem: "Senhas não conferem"})
 			return
 		}
+		if len(user.Senha) < 6 {
+			w.WriteHeader(400)
+			json.NewEncoder(w).Encode(&model.RespErro{Erro: 400, Mensagem: "Senha precisa ter no minimo 6 caracteres"})
+			return
+		}
 
+		// Cria usuario no postgres
 		hashSenha, err := bcrypt.GenerateFromPassword([]byte(user.Senha), 14)
 		if err != nil {
 			w.WriteHeader(500)
@@ -63,10 +74,46 @@ func CriarConta(db *interno.Queries) http.HandlerFunc {
 		if err != nil {
 			log.Println(err)
 			w.WriteHeader(500)
-			json.NewEncoder(w).Encode(&model.RespErro{Erro: 500, Mensagem: "Erro ao criar usuario"})
+			json.NewEncoder(w).Encode(&model.RespErro{Erro: 500, Mensagem: "Erro ao criar usuario postgres"})
 			return
 		}
-		log.Println(res)
-		w.Write([]byte("criarConta!"))
+
+		// Cria usuario no firebase
+		params := (&auth.UserToCreate{}).
+			UID(res.ID.String()).
+			Email(res.Email).
+			EmailVerified(false).
+			Password(user.Senha).
+			DisplayName(res.Nome).
+			Disabled(false)
+
+		u, err := client.CreateUser(r.Context(), params)
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(400)
+			json.NewEncoder(w).Encode(&model.RespErro{Erro: 500, Mensagem: err.Error()})
+			return
+		}
+
+		claims := map[string]interface{}{
+			"teste": "testando",
+		}
+
+		err = client.SetCustomUserClaims(r.Context(), u.UID, claims)
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(400)
+			json.NewEncoder(w).Encode(&model.RespErro{Erro: 500, Mensagem: "Erro token"})
+			return
+		}
+		token, err := client.CustomTokenWithClaims(r.Context(), u.UID, claims)
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(400)
+			json.NewEncoder(w).Encode(&model.RespErro{Erro: 500, Mensagem: "Erro token"})
+			return
+		}
+
+		w.Write([]byte(token))
 	}
 }
