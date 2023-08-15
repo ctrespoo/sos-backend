@@ -23,7 +23,7 @@ type CriarUsuarioParams struct {
 }
 
 func (q *Queries) CriarUsuario(ctx context.Context, arg CriarUsuarioParams) (Usuario, error) {
-	row := q.db.QueryRowContext(ctx, criarUsuario,
+	row := q.db.QueryRow(ctx, criarUsuario,
 		arg.Nome,
 		arg.Email,
 		arg.Senha,
@@ -50,7 +50,7 @@ LIMIT 1
 `
 
 func (q *Queries) PegarUsuarioEmail(ctx context.Context, email string) (Usuario, error) {
-	row := q.db.QueryRowContext(ctx, pegarUsuarioEmail, email)
+	row := q.db.QueryRow(ctx, pegarUsuarioEmail, email)
 	var i Usuario
 	err := row.Scan(
 		&i.ID,

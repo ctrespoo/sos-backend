@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"log"
 	"net/http"
 	"os"
@@ -20,7 +19,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/go-chi/jwtauth/v5"
-	_ "github.com/lib/pq"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"google.golang.org/api/option"
 )
 
@@ -29,26 +28,26 @@ func init() {
 }
 
 func main() {
+	ctx := context.Background()
 
 	dbs := os.Getenv("DATABASE_URL")
-
 	if dbs == "" {
 		log.Fatal("DATABASE_URL não definida")
 	}
 
-	db, err := sql.Open("postgres", dbs)
+	db, err := pgxpool.New(ctx, dbs)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
-	err = db.Ping()
+
+	err = db.Ping(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	dbtx := interno.New(db)
 
-	ctx := context.Background()
 	opt := option.WithCredentialsFile("./firebase.json")
 	app, err := firebase.NewApp(ctx, nil, opt)
 	if err != nil {

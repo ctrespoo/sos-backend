@@ -21,8 +21,8 @@ model Usuario {
   nome       String
   telefone   String   @unique
   senha      String
-  created_at DateTime @default(dbgenerated("CURRENT_TIMESTAMP SET TIME ZONE 'America/Sao_Paulo'"))
-  updated_at DateTime @default(dbgenerated("CURRENT_TIMESTAMP")) @updatedAt
+  created_at DateTime @default(dbgenerated("CURRENT_TIMESTAMP")) @db.Timestamp(0)
+  updated_at DateTime @default(dbgenerated("CURRENT_TIMESTAMP")) @updatedAt @db.Timestamp(0)
 
   @@map("usuarios")
 }
@@ -45,8 +45,8 @@ model Produto {
   quantidade        Int
   ativo             Boolean           @default(false)
   ordem             Int
-  created_at        DateTime          @default(dbgenerated("CURRENT_TIMESTAMP"))
-  updated_at        DateTime          @default(dbgenerated("CURRENT_TIMESTAMP")) @updatedAt
+  created_at        DateTime          @default(dbgenerated("CURRENT_TIMESTAMP")) @db.Timestamp(0)
+  updated_at        DateTime          @default(dbgenerated("CURRENT_TIMESTAMP")) @updatedAt @db.Timestamp(0)
 
   @@map("produtos")
 }

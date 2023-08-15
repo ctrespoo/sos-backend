@@ -2,8 +2,12 @@ version: "2"
 sql:
   - engine: "postgresql"
     queries: "interno/query.sql"
-    schema: "prisma/migrations/0_init/migration.sql"
+    schema: "prisma/0_init/migration.sql"
     gen:
       go:
         package: "db"
+        sql_package: "pgx/v5"
         out: "interno/db"
+        overrides:
+          - db_type: "uuid"
+            go_type: "github.com/google/uuid.UUID"

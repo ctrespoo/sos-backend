@@ -5,10 +5,71 @@
 package db
 
 import (
-	"time"
+	"database/sql/driver"
+	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+type TipoUnidadeMedida string
+
+const (
+	TipoUnidadeMedidaKG TipoUnidadeMedida = "KG"
+	TipoUnidadeMedidaG  TipoUnidadeMedida = "G"
+)
+
+func (e *TipoUnidadeMedida) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = TipoUnidadeMedida(s)
+	case string:
+		*e = TipoUnidadeMedida(s)
+	default:
+		return fmt.Errorf("unsupported scan type for TipoUnidadeMedida: %T", src)
+	}
+	return nil
+}
+
+type NullTipoUnidadeMedida struct {
+	TipoUnidadeMedida TipoUnidadeMedida
+	Valid             bool // Valid is true if TipoUnidadeMedida is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullTipoUnidadeMedida) Scan(value interface{}) error {
+	if value == nil {
+		ns.TipoUnidadeMedida, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.TipoUnidadeMedida.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullTipoUnidadeMedida) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.TipoUnidadeMedida), nil
+}
+
+type Produto struct {
+	ID               uuid.UUID
+	Nome             string
+	Sku              string
+	Barcode          string
+	Descricao        string
+	Preco            pgtype.Numeric
+	UnidadeMedida    TipoUnidadeMedida
+	QuantidadePacote int32
+	Peso             pgtype.Numeric
+	Quantidade       int32
+	Ativo            bool
+	Ordem            int32
+	CreatedAt        pgtype.Timestamp
+	UpdatedAt        pgtype.Timestamp
+}
 
 type Usuario struct {
 	ID        uuid.UUID
@@ -16,6 +77,6 @@ type Usuario struct {
 	Nome      string
 	Telefone  string
 	Senha     string
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	CreatedAt pgtype.Timestamp
+	UpdatedAt pgtype.Timestamp
 }
