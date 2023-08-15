@@ -2,7 +2,7 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 // npx prisma db push --skip-generate 
 //npx prisma migrate dev --name i --skip-generate
-//npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > prisma/migrations/0_init/migration.sql
+//npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > prisma/0_init/migration.sql
 //npx prisma migrate resolve --applied 0_init
 //docker run --name some-postgres --restart always -p 5432:5432 -e POSTGRES_PASSWORD=6GKePzfr56sBUDC9ctBNq8H36QJcvAsYVqKpiEbF -d postgres:15.3-alpine3.18 -c shared_buffers=256MB -c max_connections=200
 
@@ -21,10 +21,28 @@ model Usuario {
   nome       String
   telefone   String   @unique
   senha      String
-  created_at DateTime @default(dbgenerated("CURRENT_TIMESTAMP")) @db.Timestamp(0)
-  updated_at DateTime @default(dbgenerated("CURRENT_TIMESTAMP")) @updatedAt @db.Timestamp(0)
+  created_at DateTime @default(dbgenerated("CURRENT_TIMESTAMP"))
+  updated_at DateTime @default(dbgenerated("CURRENT_TIMESTAMP")) @updatedAt
 
   @@map("usuarios")
+}
+
+model Categoria {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nome       String    @unique
+  produto    Produto[]
+  imagem     String
+  created_at DateTime  @default(dbgenerated("CURRENT_TIMESTAMP"))
+  updated_at DateTime  @default(dbgenerated("CURRENT_TIMESTAMP")) @updatedAt
+
+  @@map("categorias")
+}
+
+model Loja {
+  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ProdutoLoja ProdutoLoja[]
+
+  @@map("loja")
 }
 
 enum TipoUnidadeMedida {
@@ -35,18 +53,36 @@ enum TipoUnidadeMedida {
 model Produto {
   id                String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   nome              String
-  sku               String
-  barcode           String
   descricao         String
   preco             Decimal           @db.Decimal(15, 2)
   unidade_medida    TipoUnidadeMedida
   quantidade_pacote Int
   peso              Decimal           @db.Decimal(15, 2)
-  quantidade        Int
   ativo             Boolean           @default(false)
-  ordem             Int
-  created_at        DateTime          @default(dbgenerated("CURRENT_TIMESTAMP")) @db.Timestamp(0)
-  updated_at        DateTime          @default(dbgenerated("CURRENT_TIMESTAMP")) @updatedAt @db.Timestamp(0)
+  ordem             Int               @default(0)
+  categoria         Categoria[]
+  imagem            String
+  created_at        DateTime          @default(dbgenerated("CURRENT_TIMESTAMP"))
+  updated_at        DateTime          @default(dbgenerated("CURRENT_TIMESTAMP")) @updatedAt
+  ProdutoLoja       ProdutoLoja[]
 
   @@map("produtos")
+}
+
+model ProdutoLoja {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sku        String?
+  barcode    String?
+  produto_id String   @db.Uuid
+  loja_id    String   @db.Uuid
+  ativo      Boolean? @default(false)
+  created_at DateTime @default(dbgenerated("CURRENT_TIMESTAMP"))
+  updated_at DateTime @default(dbgenerated("CURRENT_TIMESTAMP")) @updatedAt
+
+  produto Produto @relation(fields: [produto_id], references: [id])
+  loja    Loja    @relation(fields: [loja_id], references: [id])
+
+  @@unique([produto_id, loja_id])
+  @@unique([loja_id, sku])
+  @@map("produtos_loja")
 }
