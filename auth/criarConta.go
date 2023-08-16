@@ -1,16 +1,17 @@
-package mobile
+package auth
 
 import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strings"
 
 	model "sos/backend/model"
 
 	interno "sos/backend/interno/db"
 
 	"firebase.google.com/go/v4/auth"
-	"golang.org/x/crypto/bcrypt"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type user struct {
@@ -21,7 +22,7 @@ type user struct {
 	RepitaSenha string `json:"repitaSenha"`
 }
 
-func CriarConta(db *interno.Queries, client *auth.Client) http.HandlerFunc {
+func CriarConta(db *interno.Queries, client *auth.Client, dbx *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		w.Header().Set("Content-Type", "application/json")
@@ -61,21 +62,41 @@ func CriarConta(db *interno.Queries, client *auth.Client) http.HandlerFunc {
 		}
 
 		// Cria usuario no postgres
-		hashSenha, err := bcrypt.GenerateFromPassword([]byte(user.Senha), 14)
+		tx, err := dbx.Begin(r.Context())
 		if err != nil {
+			log.Println(err)
 			w.WriteHeader(500)
-			json.NewEncoder(w).Encode(&model.RespErro{Erro: 500, Mensagem: "Erro ao gerar hash da senha"})
+			json.NewEncoder(w).Encode(&model.RespErro{Erro: 500, Mensagem: "Erro interno tx"})
 			return
 		}
+		defer tx.Rollback(r.Context())
 
-		res, err := db.CriarUsuario(r.Context(), interno.CriarUsuarioParams{
+		dbtx := db.WithTx(tx)
+
+		res, err := dbtx.CriarUsuario(r.Context(), interno.CriarUsuarioParams{
 			Telefone: user.Telefone,
 			Nome:     user.Nome,
 			Email:    user.Email,
-			Senha:    string(hashSenha),
+			Ativo:    true,
 		})
 		if err != nil {
 			log.Println(err)
+			// Verifica se o erro é de duplicidade
+			if strings.Contains(err.Error(), "usuarios_email_key") {
+				w.WriteHeader(400)
+				json.NewEncoder(w).Encode(&model.RespErro{Erro: 400, Mensagem: "Email já cadastrado"})
+				return
+			}
+			if strings.Contains(err.Error(), "usuarios_telefone_key") {
+				w.WriteHeader(400)
+				json.NewEncoder(w).Encode(&model.RespErro{Erro: 400, Mensagem: "Telefone já cadastrado"})
+				return
+			}
+			if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+				w.WriteHeader(400)
+				json.NewEncoder(w).Encode(&model.RespErro{Erro: 400, Mensagem: "Usuario já cadastrado"})
+				return
+			}
 			w.WriteHeader(500)
 			json.NewEncoder(w).Encode(&model.RespErro{Erro: 500, Mensagem: "Erro ao criar usuario postgres"})
 			return
@@ -100,7 +121,7 @@ func CriarConta(db *interno.Queries, client *auth.Client) http.HandlerFunc {
 		}
 
 		claims := map[string]interface{}{
-			"teste": "testando",
+			"role": res.Role,
 		}
 
 		err = client.SetCustomUserClaims(r.Context(), u.UID, claims)
@@ -111,7 +132,8 @@ func CriarConta(db *interno.Queries, client *auth.Client) http.HandlerFunc {
 			return
 		}
 
+		tx.Commit(r.Context())
 		w.WriteHeader(201)
-		w.Write([]byte("Sucesso"))
+		json.NewEncoder(w).Encode(&model.RespErro{Mensagem: "Conta criada com sucesso"})
 	}
 }

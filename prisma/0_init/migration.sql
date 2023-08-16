@@ -1,5 +1,21 @@
 -- CreateEnum
+CREATE TYPE "RoleUser" AS ENUM ('ADMIN', 'DONO', 'GERENTE', 'CLIENTE', 'ENTREGADOR', 'OUTROS');
+
+-- CreateEnum
 CREATE TYPE "TipoUnidadeMedida" AS ENUM ('KG', 'G');
+
+-- CreateTable
+CREATE TABLE "roles" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "nome" "RoleUser" NOT NULL,
+    "scope" TEXT[],
+    "descricao" TEXT NOT NULL,
+    "ativo" BOOLEAN NOT NULL DEFAULT false,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "roles_pkey" PRIMARY KEY ("id")
+);
 
 -- CreateTable
 CREATE TABLE "usuarios" (
@@ -7,7 +23,8 @@ CREATE TABLE "usuarios" (
     "email" TEXT NOT NULL,
     "nome" TEXT NOT NULL,
     "telefone" TEXT NOT NULL,
-    "senha" TEXT NOT NULL,
+    "role" "RoleUser" NOT NULL DEFAULT 'CLIENTE',
+    "ativo" BOOLEAN NOT NULL DEFAULT false,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -71,6 +88,9 @@ CREATE TABLE "_CategoriaToProduto" (
 );
 
 -- CreateIndex
+CREATE UNIQUE INDEX "roles_nome_key" ON "roles"("nome");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "usuarios_email_key" ON "usuarios"("email");
 
 -- CreateIndex
@@ -92,10 +112,10 @@ CREATE UNIQUE INDEX "_CategoriaToProduto_AB_unique" ON "_CategoriaToProduto"("A"
 CREATE INDEX "_CategoriaToProduto_B_index" ON "_CategoriaToProduto"("B");
 
 -- AddForeignKey
-ALTER TABLE "produtos_loja" ADD CONSTRAINT "produtos_loja_produto_id_fkey" FOREIGN KEY ("produto_id") REFERENCES "produtos"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "produtos_loja" ADD CONSTRAINT "produtos_loja_produto_id_fkey" FOREIGN KEY ("produto_id") REFERENCES "produtos"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
 
 -- AddForeignKey
-ALTER TABLE "produtos_loja" ADD CONSTRAINT "produtos_loja_loja_id_fkey" FOREIGN KEY ("loja_id") REFERENCES "loja"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "produtos_loja" ADD CONSTRAINT "produtos_loja_loja_id_fkey" FOREIGN KEY ("loja_id") REFERENCES "loja"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
 
 -- AddForeignKey
 ALTER TABLE "_CategoriaToProduto" ADD CONSTRAINT "_CategoriaToProduto_A_fkey" FOREIGN KEY ("A") REFERENCES "categorias"("id") ON DELETE CASCADE ON UPDATE CASCADE;

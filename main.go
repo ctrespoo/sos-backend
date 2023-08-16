@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	authm "sos/backend/mobile/auth"
+	authm "sos/backend/auth"
 
 	interno "sos/backend/interno/db"
 
@@ -75,9 +75,9 @@ func main() {
 
 	r.Get("/", home(cliente))
 
-	r.Route("/mobile/api/v1", func(r chi.Router) {
-		r.Post("/auth/login", authm.Login(dbtx))
-		r.Post("/auth/registrar", authm.CriarConta(dbtx, cliente))
+	r.Route("/api/v1", func(r chi.Router) {
+		r.Post("/auth/login", authm.Login(dbtx, cliente))
+		r.Post("/auth/registrar", authm.CriarConta(dbtx, cliente, db))
 		r.Group(func(r chi.Router) {
 
 		})

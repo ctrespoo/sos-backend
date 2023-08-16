@@ -10,24 +10,34 @@ import (
 )
 
 const criarUsuario = `-- name: CriarUsuario :one
-INSERT INTO usuarios (nome, email, senha, telefone)
-VALUES ($1, $2, $3, $4)
-RETURNING id, email, nome, telefone, senha, created_at, updated_at
+INSERT INTO usuarios (
+        nome,
+        email,
+        telefone,
+        ativo
+    )
+VALUES (
+        $1,
+        $2,
+        $3,
+        $4
+    )
+RETURNING id, email, nome, telefone, role, ativo, created_at, updated_at
 `
 
 type CriarUsuarioParams struct {
 	Nome     string
 	Email    string
-	Senha    string
 	Telefone string
+	Ativo    bool
 }
 
 func (q *Queries) CriarUsuario(ctx context.Context, arg CriarUsuarioParams) (Usuario, error) {
 	row := q.db.QueryRow(ctx, criarUsuario,
 		arg.Nome,
 		arg.Email,
-		arg.Senha,
 		arg.Telefone,
+		arg.Ativo,
 	)
 	var i Usuario
 	err := row.Scan(
@@ -35,7 +45,8 @@ func (q *Queries) CriarUsuario(ctx context.Context, arg CriarUsuarioParams) (Usu
 		&i.Email,
 		&i.Nome,
 		&i.Telefone,
-		&i.Senha,
+		&i.Role,
+		&i.Ativo,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -43,7 +54,7 @@ func (q *Queries) CriarUsuario(ctx context.Context, arg CriarUsuarioParams) (Usu
 }
 
 const pegarUsuarioEmail = `-- name: PegarUsuarioEmail :one
-SELECT id, email, nome, telefone, senha, created_at, updated_at
+SELECT id, email, nome, telefone, role, ativo, created_at, updated_at
 FROM usuarios
 WHERE email = $1
 LIMIT 1
@@ -57,7 +68,8 @@ func (q *Queries) PegarUsuarioEmail(ctx context.Context, email string) (Usuario,
 		&i.Email,
 		&i.Nome,
 		&i.Telefone,
-		&i.Senha,
+		&i.Role,
+		&i.Ativo,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

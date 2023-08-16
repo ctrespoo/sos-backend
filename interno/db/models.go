@@ -12,6 +12,52 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type RoleUser string
+
+const (
+	RoleUserADMIN      RoleUser = "ADMIN"
+	RoleUserDONO       RoleUser = "DONO"
+	RoleUserGERENTE    RoleUser = "GERENTE"
+	RoleUserCLIENTE    RoleUser = "CLIENTE"
+	RoleUserENTREGADOR RoleUser = "ENTREGADOR"
+	RoleUserOUTROS     RoleUser = "OUTROS"
+)
+
+func (e *RoleUser) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = RoleUser(s)
+	case string:
+		*e = RoleUser(s)
+	default:
+		return fmt.Errorf("unsupported scan type for RoleUser: %T", src)
+	}
+	return nil
+}
+
+type NullRoleUser struct {
+	RoleUser RoleUser
+	Valid    bool // Valid is true if RoleUser is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullRoleUser) Scan(value interface{}) error {
+	if value == nil {
+		ns.RoleUser, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.RoleUser.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullRoleUser) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.RoleUser), nil
+}
+
 type TipoUnidadeMedida string
 
 const (
@@ -54,21 +100,57 @@ func (ns NullTipoUnidadeMedida) Value() (driver.Value, error) {
 	return string(ns.TipoUnidadeMedida), nil
 }
 
+type Categoria struct {
+	ID        uuid.UUID
+	Nome      string
+	Imagem    string
+	CreatedAt pgtype.Timestamp
+	UpdatedAt pgtype.Timestamp
+}
+
+type CategoriaToProduto struct {
+	A uuid.UUID
+	B uuid.UUID
+}
+
+type Loja struct {
+	ID uuid.UUID
+}
+
 type Produto struct {
 	ID               uuid.UUID
 	Nome             string
-	Sku              string
-	Barcode          string
 	Descricao        string
 	Preco            pgtype.Numeric
 	UnidadeMedida    TipoUnidadeMedida
 	QuantidadePacote int32
 	Peso             pgtype.Numeric
-	Quantidade       int32
 	Ativo            bool
 	Ordem            int32
+	Imagem           string
 	CreatedAt        pgtype.Timestamp
 	UpdatedAt        pgtype.Timestamp
+}
+
+type ProdutosLoja struct {
+	ID        uuid.UUID
+	Sku       pgtype.Text
+	Barcode   pgtype.Text
+	ProdutoID uuid.UUID
+	LojaID    uuid.UUID
+	Ativo     pgtype.Bool
+	CreatedAt pgtype.Timestamp
+	UpdatedAt pgtype.Timestamp
+}
+
+type Role struct {
+	ID        uuid.UUID
+	Nome      RoleUser
+	Scope     []string
+	Descricao string
+	Ativo     bool
+	CreatedAt pgtype.Timestamp
+	UpdatedAt pgtype.Timestamp
 }
 
 type Usuario struct {
@@ -76,7 +158,8 @@ type Usuario struct {
 	Email     string
 	Nome      string
 	Telefone  string
-	Senha     string
+	Role      RoleUser
+	Ativo     bool
 	CreatedAt pgtype.Timestamp
 	UpdatedAt pgtype.Timestamp
 }
