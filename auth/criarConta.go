@@ -132,8 +132,17 @@ func CriarConta(db *interno.Queries, client *auth.Client, dbx *pgxpool.Pool) htt
 			return
 		}
 
+		token, err := client.CustomToken(r.Context(), u.UID)
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(500)
+			json.NewEncoder(w).Encode(&model.RespErro{Erro: 500, Mensagem: "Erro token"})
+			return
+		}
+
 		tx.Commit(r.Context())
+
 		w.WriteHeader(201)
-		json.NewEncoder(w).Encode(&model.RespErro{Mensagem: "Conta criada com sucesso"})
+		json.NewEncoder(w).Encode(&model.RespSucesso{Token: token})
 	}
 }

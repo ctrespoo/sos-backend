@@ -8,6 +8,7 @@ import (
 	"time"
 
 	authm "sos/backend/auth"
+	produtos "sos/backend/produtos"
 
 	interno "sos/backend/interno/db"
 
@@ -64,22 +65,24 @@ func main() {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Timeout(60 * time.Second))
-
 	r.Use(cors.Handler(cors.Options{
-		AllowedMethods:   []string{"GET", "POST", "PUT"},
 		AllowedOrigins:   []string{"*"},
-		AllowedHeaders:   []string{"*"},
+		AllowedMethods:   []string{"GET", "PUT", "POST", "DELETE", "HEAD", "OPTION"},
+		AllowedHeaders:   []string{"User-Agent", "Content-Type", "Accept", "Accept-Encoding", "Accept-Language", "Cache-Control", "Connection", "DNT", "Host", "Origin", "Pragma", "Referer"},
+		ExposedHeaders:   []string{"Link"},
 		AllowCredentials: true,
-		MaxAge:           300,
+		MaxAge:           300, // Maximum value not ignored by any of major browsers
 	}))
 
 	r.Get("/", home(cliente))
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Post("/auth/login", authm.Login(dbtx, cliente))
+		r.Post("/auth/verificar", authm.Verificar(dbtx, cliente))
 		r.Post("/auth/registrar", authm.CriarConta(dbtx, cliente, db))
-		r.Group(func(r chi.Router) {
 
+		r.Group(func(r chi.Router) {
+			r.Get("/produtos", produtos.PegarTodosProdutos(dbtx, cliente))
 		})
 	})
 
