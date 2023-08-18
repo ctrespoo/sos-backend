@@ -1,6 +1,7 @@
 package produtos
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 	interno "sos/backend/interno/db"
@@ -27,11 +28,23 @@ func PegarTodosProdutos(db *interno.Queries, app *auth.Client) http.HandlerFunc 
 			w.Write([]byte(`{"message": "Token inválido"}`))
 			return
 		}
-		dd := user.Claims["role"]
 
-		log.Println(dd)
+		role := user.Claims["role"]
+		log.Println(role)
+		// if role != "ADMIN" && role != "DONO" {
+		// 	w.WriteHeader(401)
+		// 	w.Write([]byte(`{"message": "Usuário não autorizado"}`))
+		// 	return
+		// }
+
+		produtos, err := db.PegarTodosProdutos(r.Context(), interno.PegarTodosProdutosParams{Limit: 10, Offset: 0})
+		if err != nil {
+			w.WriteHeader(500)
+			w.Write([]byte(`{"message": "Erro ao pegar produtos"}`))
+			return
+		}
 
 		w.WriteHeader(200)
-		w.Write([]byte(`{"message": "Hello World"}`))
+		json.NewEncoder(w).Encode(produtos)
 	}
 }

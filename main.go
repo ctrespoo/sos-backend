@@ -83,6 +83,7 @@ func main() {
 
 		r.Group(func(r chi.Router) {
 			r.Get("/produtos", produtos.PegarTodosProdutos(dbtx, cliente))
+			r.Post("/produtos", produtos.CriaProduto(dbtx, cliente))
 		})
 	})
 
