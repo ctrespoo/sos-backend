@@ -66,3 +66,12 @@ LIMIT 1;
 -- name: InserirCategoriaNoProduto :batchexec
 INSERT INTO "_CategoriaToProduto" ("A", "B")
 VALUES ($1, $2);
+-- name: CriarCategoria :one
+INSERT INTO "categorias" ("nome", "imagem")
+VALUES ($1, $2)
+RETURNING "id";
+-- name: PegarTodasCategorias :many
+SELECT *
+FROM "categorias"
+ORDER BY "updated_at" DESC
+LIMIT $1 OFFSET $2;

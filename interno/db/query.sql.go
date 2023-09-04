@@ -12,6 +12,24 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const criarCategoria = `-- name: CriarCategoria :one
+INSERT INTO "categorias" ("nome", "imagem")
+VALUES ($1, $2)
+RETURNING "id"
+`
+
+type CriarCategoriaParams struct {
+	Nome   string
+	Imagem string
+}
+
+func (q *Queries) CriarCategoria(ctx context.Context, arg CriarCategoriaParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, criarCategoria, arg.Nome, arg.Imagem)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
 const criarProduto = `-- name: CriarProduto :one
 INSERT INTO "produtos" (
         "nome",
@@ -99,6 +117,44 @@ func (q *Queries) CriarUsuario(ctx context.Context, arg CriarUsuarioParams) (Usu
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const pegarTodasCategorias = `-- name: PegarTodasCategorias :many
+SELECT id, nome, imagem, created_at, updated_at
+FROM "categorias"
+ORDER BY "updated_at" DESC
+LIMIT $1 OFFSET $2
+`
+
+type PegarTodasCategoriasParams struct {
+	Limit  int32
+	Offset int32
+}
+
+func (q *Queries) PegarTodasCategorias(ctx context.Context, arg PegarTodasCategoriasParams) ([]Categoria, error) {
+	rows, err := q.db.Query(ctx, pegarTodasCategorias, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Categoria
+	for rows.Next() {
+		var i Categoria
+		if err := rows.Scan(
+			&i.ID,
+			&i.Nome,
+			&i.Imagem,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const pegarTodosProdutos = `-- name: PegarTodosProdutos :many

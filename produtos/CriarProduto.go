@@ -8,7 +8,21 @@ import (
 
 	"firebase.google.com/go/v4/auth"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+type Produto struct {
+	Nome             string         `json:"nome"`
+	Descricao        string         `json:"descricao"`
+	Preco            pgtype.Numeric `json:"preco"`
+	UnidadeMedida    string         `json:"unidadeMedida"`
+	QuantidadePacote int32          `json:"quantidadePacote"`
+	Peso             pgtype.Numeric `json:"peso"`
+	Ativo            bool           `json:"ativo"`
+	Ordem            int32          `json:"ordem"`
+	Imagem           string         `json:"imagem"`
+	Categoria        []string       `json:"categoria"`
+}
 
 func CriaProduto(db *interno.Queries, app *auth.Client) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -37,9 +51,19 @@ func CriaProduto(db *interno.Queries, app *auth.Client) http.HandlerFunc {
 		// 	return
 		// }
 
-		var inserirCategoriaNoProdutoParams []interno.InserirCategoriaNoProdutoParams
+		var produto Produto
 
-		idProduto, err := db.CriarProduto(r.Context(), interno.CriarProdutoParams{})
+		idProduto, err := db.CriarProduto(r.Context(), interno.CriarProdutoParams{
+			Nome:             produto.Nome,
+			Descricao:        produto.Descricao,
+			Preco:            produto.Preco,
+			UnidadeMedida:    interno.TipoUnidadeMedida(produto.UnidadeMedida),
+			QuantidadePacote: produto.QuantidadePacote,
+			Peso:             produto.Peso,
+			Ativo:            produto.Ativo,
+			Ordem:            produto.Ordem,
+			Imagem:           produto.Imagem,
+		})
 		if err != nil {
 			log.Println(err)
 			w.WriteHeader(500)
@@ -47,7 +71,9 @@ func CriaProduto(db *interno.Queries, app *auth.Client) http.HandlerFunc {
 			return
 		}
 
-		categoria := db.PegarCategoriaPeloNome(r.Context(), []string{"teste", "Categoria do Produto", "c2"})
+		var inserirCategoriaNoProdutoParams []interno.InserirCategoriaNoProdutoParams
+
+		categoria := db.PegarCategoriaPeloNome(r.Context(), produto.Categoria)
 		defer categoria.Close()
 		categoria.Query(func(i int, id []uuid.UUID, err error) {
 			if err != nil {
