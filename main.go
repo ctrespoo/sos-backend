@@ -8,6 +8,7 @@ import (
 	"time"
 
 	authm "sos/backend/auth"
+	categoria "sos/backend/categorias"
 	produtos "sos/backend/produtos"
 
 	interno "sos/backend/interno/db"
@@ -84,6 +85,7 @@ func main() {
 		r.Group(func(r chi.Router) {
 			r.Get("/produtos", produtos.PegarTodosProdutos(dbtx, cliente))
 			r.Post("/produtos", produtos.CriaProduto(dbtx, cliente))
+			r.Get("/categorias", categoria.PegarTodasCategorias(dbtx, cliente))
 		})
 	})
 
