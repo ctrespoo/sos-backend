@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -15,6 +17,7 @@ import (
 
 	global "sos/backend/global"
 
+	"cloud.google.com/go/storage"
 	firebase "firebase.google.com/go/v4"
 	"firebase.google.com/go/v4/auth"
 	"github.com/go-chi/chi/v5"
@@ -50,14 +53,25 @@ func main() {
 
 	dbtx := interno.New(db)
 
+	config := &firebase.Config{
+		StorageBucket: "sos-do-maceneiro.appspot.com",
+	}
 	opt := option.WithCredentialsFile("./firebase.json")
-	app, err := firebase.NewApp(ctx, nil, opt)
+	app, err := firebase.NewApp(ctx, config, opt)
 	if err != nil {
 		log.Fatal(err)
 	}
 	cliente, err := app.Auth(ctx)
 	if err != nil {
 		log.Fatalf("error getting Auth client: %v\n", err)
+	}
+	clientStorage, err := app.Storage(ctx)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	bucket, err := clientStorage.DefaultBucket()
+	if err != nil {
+		log.Fatalln(err)
 	}
 
 	r := chi.NewRouter()
@@ -75,7 +89,7 @@ func main() {
 		MaxAge:           300, // Maximum value not ignored by any of major browsers
 	}))
 
-	r.Get("/", home(cliente))
+	r.Post("/", home(cliente, bucket))
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Post("/auth/login", authm.Login(dbtx, cliente))
@@ -84,7 +98,7 @@ func main() {
 
 		r.Group(func(r chi.Router) {
 			r.Get("/produtos", produtos.PegarTodosProdutos(dbtx, cliente))
-			r.Post("/produtos", produtos.CriaProduto(dbtx, cliente))
+			r.Post("/produtos", produtos.CriaProduto(dbtx, cliente, bucket))
 			r.Get("/categorias", categoria.PegarTodasCategorias(dbtx, cliente))
 		})
 	})
@@ -102,29 +116,32 @@ func main() {
 	log.Fatal(srv.ListenAndServe())
 }
 
-func home(client *auth.Client) http.HandlerFunc {
+func home(client *auth.Client, bucket *storage.BucketHandle) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		uid := "f866ba49-e72a-4ec0-90c5-e3d014722be4"
-
-		claims := map[string]interface{}{
-			"premiumAccount": true,
-		}
-
-		err := client.SetCustomUserClaims(r.Context(), uid, claims)
+		log.Println(r.Header.Get("Content-Type"))
+		imagem, _, err := r.FormFile("imagem")
 		if err != nil {
-			log.Fatalf("error setting custom claims %v\n", err)
+			w.Header().Set("Content-Type", "application/json")
+			log.Println(err)
+			w.WriteHeader(500)
+			w.Write([]byte(`{"message": "Erro ao pegar imagem"}`))
+			return
 		}
-		u, err := client.GetUser(r.Context(), uid)
+		defer imagem.Close()
+		imgBytes, _ := io.ReadAll(imagem)
+		write := bucket.Object("teste/go.png").NewWriter(r.Context())
+		defer write.Close()
+		b, err := io.Copy(write, bytes.NewReader(imgBytes))
 		if err != nil {
-			log.Fatalf("error getting user %s: %v\n", uid, err)
+			w.Header().Set("Content-Type", "application/json")
+			log.Println(err)
+			w.WriteHeader(500)
+			w.Write([]byte(`{"message": "Erro ao pegar imagem"}`))
+			return
 		}
 
-		token, err := client.CustomTokenWithClaims(r.Context(), uid, claims)
-		if err != nil {
-			log.Fatalf("error minting custom token: %v\n", err)
-		}
+		log.Println(b)
 
-		log.Printf("Successfully fetched user data: %v\n", u.CustomClaims)
-		w.Write([]byte(token))
+		w.Write([]byte("b"))
 	}
 }

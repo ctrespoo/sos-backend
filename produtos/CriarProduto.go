@@ -1,11 +1,15 @@
 package produtos
 
 import (
+	"bytes"
+	"encoding/json"
+	"io"
 	"log"
 	"net/http"
 	interno "sos/backend/interno/db"
 	"strings"
 
+	"cloud.google.com/go/storage"
 	"firebase.google.com/go/v4/auth"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -20,11 +24,11 @@ type Produto struct {
 	Peso             pgtype.Numeric `json:"peso"`
 	Ativo            bool           `json:"ativo"`
 	Ordem            int32          `json:"ordem"`
-	Imagem           string         `json:"imagem"`
+	Imagem           http.File      `json:"imagem"`
 	Categoria        []string       `json:"categoria"`
 }
 
-func CriaProduto(db *interno.Queries, app *auth.Client) http.HandlerFunc {
+func CriaProduto(db *interno.Queries, app *auth.Client, bucket *storage.BucketHandle) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
@@ -52,6 +56,8 @@ func CriaProduto(db *interno.Queries, app *auth.Client) http.HandlerFunc {
 		// }
 
 		var produto Produto
+		jsonData := r.FormValue("produto")
+		json.Unmarshal([]byte(jsonData), &produto)
 
 		idProduto, err := db.CriarProduto(r.Context(), interno.CriarProdutoParams{
 			Nome:             produto.Nome,
@@ -62,12 +68,39 @@ func CriaProduto(db *interno.Queries, app *auth.Client) http.HandlerFunc {
 			Peso:             produto.Peso,
 			Ativo:            produto.Ativo,
 			Ordem:            produto.Ordem,
-			Imagem:           produto.Imagem,
+			Imagem:           "produto.Imagem",
 		})
 		if err != nil {
 			log.Println(err)
 			w.WriteHeader(500)
 			w.Write([]byte(`{"message": "Erro ao criar produto"}`))
+			return
+		}
+		imagem, _, err := r.FormFile("imagem")
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(500)
+			w.Write([]byte(`{"message": "Erro ao pegar imagem"}`))
+			return
+		}
+		defer imagem.Close()
+		nomeImagemProduto := "produtos/" + idProduto.String() + ".png"
+		imgBytes, err := io.ReadAll(imagem)
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(500)
+			w.Write([]byte(`{"message": "Erro ao ler imagem"}`))
+			return
+		}
+		obj := bucket.Object(nomeImagemProduto)
+		write := obj.NewWriter(r.Context())
+		defer write.Close()
+
+		_, err = io.Copy(write, bytes.NewReader(imgBytes))
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(500)
+			w.Write([]byte(`{"message": "Erro ao salvar imagem"}`))
 			return
 		}
 
@@ -83,13 +116,22 @@ func CriaProduto(db *interno.Queries, app *auth.Client) http.HandlerFunc {
 				return
 			}
 			for _, idCategoria := range id {
-				inserirCategoriaNoProdutoParams = append(inserirCategoriaNoProdutoParams, interno.InserirCategoriaNoProdutoParams{A: idProduto, B: idCategoria})
+				inserirCategoriaNoProdutoParams = append(inserirCategoriaNoProdutoParams, interno.InserirCategoriaNoProdutoParams{A: idCategoria, B: idProduto})
 			}
 		})
 
 		categoriaInserida := db.InserirCategoriaNoProduto(r.Context(), inserirCategoriaNoProdutoParams)
 		defer categoriaInserida.Close()
+		categoriaInserida.Exec(func(i int, err error) {
+			if err != nil {
+				log.Println(err)
+				w.WriteHeader(500)
+				w.Write([]byte(`{"message": "Erro ao inserir categoria no produto"}`))
+				return
+			}
+		})
 
-		w.WriteHeader(200)
+		w.Write([]byte(write.MediaLink))
+		w.WriteHeader(201)
 	}
 }
