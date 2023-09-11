@@ -32,12 +32,25 @@ func CriaProduto(db *interno.Queries, app *auth.Client, bucket *storage.BucketHa
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
-		token := r.Header.Get("Authorization")
-		token = strings.Replace(token, "Bearer ", "", 1)
-		if token == "" {
+		tokenC, err := r.Cookie("session")
+		if err != nil {
+			log.Println(err)
 			w.WriteHeader(401)
 			w.Write([]byte(`{"message": "Token não fornecido"}`))
 			return
+		}
+
+		token := r.Header.Get("Authorization")
+		token = strings.Replace(token, "Bearer ", "", 1)
+		if token == "" {
+			token = tokenC.Value
+
+			if token == "" {
+				w.WriteHeader(401)
+				w.Write([]byte(`{"message": "Token não fornecido"}`))
+				return
+
+			}
 		}
 
 		user, err := app.VerifyIDToken(r.Context(), token)

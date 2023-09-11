@@ -97,6 +97,7 @@ func main() {
 		r.Post("/auth/registrar", authm.CriarConta(dbtx, cliente, db))
 
 		r.Group(func(r chi.Router) {
+			r.Get("/produtos/{id}", produtos.PegarProdutoUnico(dbtx, cliente, bucket))
 			r.Get("/produtos", produtos.PegarTodosProdutos(dbtx, cliente))
 			r.Post("/produtos", produtos.CriaProduto(dbtx, cliente, bucket))
 			r.Get("/categorias", categoria.PegarTodasCategorias(dbtx, cliente))

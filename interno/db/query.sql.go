@@ -128,6 +128,67 @@ func (q *Queries) CriarUsuario(ctx context.Context, arg CriarUsuarioParams) (Usu
 	return i, err
 }
 
+const pegarProdutoUnico = `-- name: PegarProdutoUnico :one
+SELECT p.id AS produto_id,
+    p.nome AS produto_nome,
+    p.descricao AS produto_descricao,
+    p.preco AS produto_preco,
+    p.unidade_medida AS produto_unidade_medida,
+    p.quantidade_pacote AS produto_quantidade_pacote,
+    p.peso AS produto_peso,
+    p.ativo AS produto_ativo,
+    p.ordem AS produto_ordem,
+    p.imagem AS produto_imagem,
+    array_to_string(array_agg(c.nome), ',') AS categorias_relacionadas
+FROM produtos AS p
+    JOIN "_CategoriaToProduto" AS cp ON p.id = cp."B"
+    JOIN categorias AS c ON cp."A" = c.id
+WHERE p.id = $1
+GROUP BY p.id,
+    p.nome,
+    p.descricao,
+    p.preco,
+    p.unidade_medida,
+    p.quantidade_pacote,
+    p.peso,
+    p.ativo,
+    p.ordem,
+    p.imagem
+`
+
+type PegarProdutoUnicoRow struct {
+	ProdutoID               uuid.UUID
+	ProdutoNome             string
+	ProdutoDescricao        string
+	ProdutoPreco            pgtype.Numeric
+	ProdutoUnidadeMedida    TipoUnidadeMedida
+	ProdutoQuantidadePacote int32
+	ProdutoPeso             pgtype.Numeric
+	ProdutoAtivo            bool
+	ProdutoOrdem            int32
+	ProdutoImagem           string
+	CategoriasRelacionadas  string
+}
+
+func (q *Queries) PegarProdutoUnico(ctx context.Context, id uuid.UUID) (PegarProdutoUnicoRow, error) {
+	row := q.db.QueryRow(ctx, pegarProdutoUnico, id)
+	var i PegarProdutoUnicoRow
+	err := row.Scan(
+		&i.ProdutoID,
+		&i.ProdutoNome,
+		&i.ProdutoDescricao,
+		&i.ProdutoPreco,
+		&i.ProdutoUnidadeMedida,
+		&i.ProdutoQuantidadePacote,
+		&i.ProdutoPeso,
+		&i.ProdutoAtivo,
+		&i.ProdutoOrdem,
+		&i.ProdutoImagem,
+		&i.CategoriasRelacionadas,
+	)
+	return i, err
+}
+
 const pegarTodasCategorias = `-- name: PegarTodasCategorias :many
 SELECT id, nome, imagem, created_at, updated_at
 FROM "categorias"

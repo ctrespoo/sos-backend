@@ -44,6 +44,32 @@ GROUP BY p.id,
     p.imagem
 ORDER BY p.updated_at DESC
 LIMIT $1 OFFSET $2;
+-- name: PegarProdutoUnico :one
+SELECT p.id AS produto_id,
+    p.nome AS produto_nome,
+    p.descricao AS produto_descricao,
+    p.preco AS produto_preco,
+    p.unidade_medida AS produto_unidade_medida,
+    p.quantidade_pacote AS produto_quantidade_pacote,
+    p.peso AS produto_peso,
+    p.ativo AS produto_ativo,
+    p.ordem AS produto_ordem,
+    p.imagem AS produto_imagem,
+    array_to_string(array_agg(c.nome), ',') AS categorias_relacionadas
+FROM produtos AS p
+    JOIN "_CategoriaToProduto" AS cp ON p.id = cp."B"
+    JOIN categorias AS c ON cp."A" = c.id
+WHERE p.id = $1
+GROUP BY p.id,
+    p.nome,
+    p.descricao,
+    p.preco,
+    p.unidade_medida,
+    p.quantidade_pacote,
+    p.peso,
+    p.ativo,
+    p.ordem,
+    p.imagem;
 -- name: CriarProduto :one
 INSERT INTO "produtos" (
         "nome",
