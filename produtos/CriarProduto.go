@@ -68,7 +68,6 @@ func CriaProduto(db *interno.Queries, app *auth.Client, bucket *storage.BucketHa
 			Peso:             produto.Peso,
 			Ativo:            produto.Ativo,
 			Ordem:            produto.Ordem,
-			Imagem:           "produto.Imagem",
 		})
 		if err != nil {
 			log.Println(err)
@@ -104,6 +103,14 @@ func CriaProduto(db *interno.Queries, app *auth.Client, bucket *storage.BucketHa
 			return
 		}
 
+		err = db.AtualizarImagemProduto(r.Context(), idProduto)
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(500)
+			w.Write([]byte(`{"message": "Erro ao atualizar imagem do produto"}`))
+			return
+		}
+
 		var inserirCategoriaNoProdutoParams []interno.InserirCategoriaNoProdutoParams
 
 		categoria := db.PegarCategoriaPeloNome(r.Context(), produto.Categoria)
@@ -131,7 +138,7 @@ func CriaProduto(db *interno.Queries, app *auth.Client, bucket *storage.BucketHa
 			}
 		})
 
-		w.Write([]byte(write.MediaLink))
+		w.Write([]byte(""))
 		w.WriteHeader(201)
 	}
 }

@@ -56,8 +56,12 @@ INSERT INTO "produtos" (
         "ordem",
         "imagem"
     )
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, '')
 RETURNING "id";
+-- name: AtualizarImagemProduto :exec
+UPDATE "produtos"
+SET "imagem" = 'https://firebasestorage.googleapis.com/v0/b/sos-do-maceneiro.appspot.com/o/produtos%2F' || "id" || '.png?alt=media'
+WHERE "id" = $1;
 -- name: PegarCategoriaPeloNome :batchmany
 SELECT "id"
 FROM "categorias"
