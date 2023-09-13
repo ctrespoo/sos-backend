@@ -84,10 +84,40 @@ INSERT INTO "produtos" (
     )
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, '')
 RETURNING "id";
+-- name: AtualizarProduto :exec
+UPDATE "produtos"
+SET "nome" = $1,
+    "descricao" = $2,
+    "preco" = $3,
+    "unidade_medida" = $4,
+    "quantidade_pacote" = $5,
+    "peso" = $6,
+    "ativo" = $7,
+    "updated_at" = CURRENT_TIMESTAMP
+WHERE "id" = $8;
 -- name: AtualizarImagemProduto :exec
 UPDATE "produtos"
 SET "imagem" = 'https://firebasestorage.googleapis.com/v0/b/sos-do-maceneiro.appspot.com/o/produtos%2F' || "id" || '.png?alt=media'
 WHERE "id" = $1;
+-- name: InserirCategoriaProdutoPeloNome :batchexec
+INSERT INTO "_CategoriaToProduto" ("A", "B")
+VALUES (
+        (
+            SELECT "id"
+            FROM categorias
+            WHERE 'nome' = $1
+        ),
+        (
+            SELECT "id"
+            FROM "produtos"
+            WHERE 'id' = $2
+        )
+    ) ON CONFLICT ("A", "B") DO NOTHING;
+-- name: PegarCategoriasProduto :many
+SELECT c.*
+FROM "categorias" c
+    JOIN "_CategoriaToProduto" cp ON c."id" = cp."A"
+WHERE cp."B" = $1;
 -- name: PegarCategoriaPeloNome :batchmany
 SELECT "id"
 FROM "categorias"

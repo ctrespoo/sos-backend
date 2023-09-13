@@ -23,6 +23,44 @@ func (q *Queries) AtualizarImagemProduto(ctx context.Context, id uuid.UUID) erro
 	return err
 }
 
+const atualizarProduto = `-- name: AtualizarProduto :exec
+UPDATE "produtos"
+SET "nome" = $1,
+    "descricao" = $2,
+    "preco" = $3,
+    "unidade_medida" = $4,
+    "quantidade_pacote" = $5,
+    "peso" = $6,
+    "ativo" = $7,
+    "updated_at" = CURRENT_TIMESTAMP
+WHERE "id" = $8
+`
+
+type AtualizarProdutoParams struct {
+	Nome             string
+	Descricao        string
+	Preco            pgtype.Numeric
+	UnidadeMedida    TipoUnidadeMedida
+	QuantidadePacote int32
+	Peso             pgtype.Numeric
+	Ativo            bool
+	ID               uuid.UUID
+}
+
+func (q *Queries) AtualizarProduto(ctx context.Context, arg AtualizarProdutoParams) error {
+	_, err := q.db.Exec(ctx, atualizarProduto,
+		arg.Nome,
+		arg.Descricao,
+		arg.Preco,
+		arg.UnidadeMedida,
+		arg.QuantidadePacote,
+		arg.Peso,
+		arg.Ativo,
+		arg.ID,
+	)
+	return err
+}
+
 const criarCategoria = `-- name: CriarCategoria :one
 INSERT INTO "categorias" ("nome", "imagem")
 VALUES ($1, $2)
@@ -126,6 +164,39 @@ func (q *Queries) CriarUsuario(ctx context.Context, arg CriarUsuarioParams) (Usu
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const pegarCategoriasProduto = `-- name: PegarCategoriasProduto :many
+SELECT c.id, c.nome, c.imagem, c.created_at, c.updated_at
+FROM "categorias" c
+    JOIN "_CategoriaToProduto" cp ON c."id" = cp."A"
+WHERE cp."B" = $1
+`
+
+func (q *Queries) PegarCategoriasProduto(ctx context.Context, b uuid.UUID) ([]Categoria, error) {
+	rows, err := q.db.Query(ctx, pegarCategoriasProduto, b)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Categoria
+	for rows.Next() {
+		var i Categoria
+		if err := rows.Scan(
+			&i.ID,
+			&i.Nome,
+			&i.Imagem,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const pegarProdutoUnico = `-- name: PegarProdutoUnico :one

@@ -60,7 +60,7 @@ func PegarProdutoUnico(db *interno.Queries, app *auth.Client, bucket *storage.Bu
 			w.Write([]byte(`{"message": "Produto não encontrado"}`))
 			return
 		}
-
+		// time.Sleep(1 * time.Second)
 		json.NewEncoder(w).Encode(produto)
 		w.WriteHeader(201)
 	}

@@ -67,6 +67,67 @@ func (b *InserirCategoriaNoProdutoBatchResults) Close() error {
 	return b.br.Close()
 }
 
+const inserirCategoriaProdutoPeloNome = `-- name: InserirCategoriaProdutoPeloNome :batchexec
+INSERT INTO "_CategoriaToProduto" ("A", "B")
+VALUES (
+        (
+            SELECT "id"
+            FROM categorias
+            WHERE 'nome' = $1
+        ),
+        (
+            SELECT "id"
+            FROM "produtos"
+            WHERE 'id' = $2
+        )
+    ) ON CONFLICT ("A", "B") DO NOTHING
+`
+
+type InserirCategoriaProdutoPeloNomeBatchResults struct {
+	br     pgx.BatchResults
+	tot    int
+	closed bool
+}
+
+type InserirCategoriaProdutoPeloNomeParams struct {
+	Column1 interface{}
+	Column2 interface{}
+}
+
+func (q *Queries) InserirCategoriaProdutoPeloNome(ctx context.Context, arg []InserirCategoriaProdutoPeloNomeParams) *InserirCategoriaProdutoPeloNomeBatchResults {
+	batch := &pgx.Batch{}
+	for _, a := range arg {
+		vals := []interface{}{
+			a.Column1,
+			a.Column2,
+		}
+		batch.Queue(inserirCategoriaProdutoPeloNome, vals...)
+	}
+	br := q.db.SendBatch(ctx, batch)
+	return &InserirCategoriaProdutoPeloNomeBatchResults{br, len(arg), false}
+}
+
+func (b *InserirCategoriaProdutoPeloNomeBatchResults) Exec(f func(int, error)) {
+	defer b.br.Close()
+	for t := 0; t < b.tot; t++ {
+		if b.closed {
+			if f != nil {
+				f(t, ErrBatchAlreadyClosed)
+			}
+			continue
+		}
+		_, err := b.br.Exec()
+		if f != nil {
+			f(t, err)
+		}
+	}
+}
+
+func (b *InserirCategoriaProdutoPeloNomeBatchResults) Close() error {
+	b.closed = true
+	return b.br.Close()
+}
+
 const pegarCategoriaPeloNome = `-- name: PegarCategoriaPeloNome :batchmany
 SELECT "id"
 FROM "categorias"
