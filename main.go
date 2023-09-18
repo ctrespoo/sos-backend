@@ -100,6 +100,7 @@ func main() {
 			r.Get("/produtos/{id}", produtos.PegarProdutoUnico(dbtx, cliente, bucket))
 			r.Get("/produtos", produtos.PegarTodosProdutos(dbtx, cliente))
 			r.Post("/produtos", produtos.CriaProduto(dbtx, cliente, bucket))
+			r.Post("/produtos/{id}", produtos.AtualizarProduto(dbtx, cliente))
 			r.Get("/categorias", categoria.PegarTodasCategorias(dbtx, cliente))
 		})
 	})
