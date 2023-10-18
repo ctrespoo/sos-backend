@@ -3,7 +3,9 @@ package main
 import (
 	"bytes"
 	"context"
+	"embed"
 	"io"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -31,6 +33,11 @@ import (
 func init() {
 	global.TokenAuth = jwtauth.New("HS256", []byte("secret"), nil) // replace with secret key
 }
+
+//go:generate bash -c "cd frontend && npm run build"
+
+//go:embed frontend/build/*
+var svelteStatic embed.FS
 
 func main() {
 	ctx := context.Background()
@@ -89,7 +96,7 @@ func main() {
 		MaxAge:           300, // Maximum value not ignored by any of major browsers
 	}))
 
-	r.Post("/", home(cliente, bucket))
+	r.Post("/teste", home(cliente, bucket))
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Post("/auth/login", authm.Login(dbtx, cliente))
@@ -105,8 +112,22 @@ func main() {
 		})
 	})
 
+	s, err := fs.Sub(svelteStatic, "frontend/build")
+	if err != nil {
+		log.Panicln(err)
+	}
+
+	staticServer := http.FileServer(http.FS(s))
+
+	r.Handle("/*", staticServer)
+
+	var port string
+	if port = os.Getenv("PORT"); port == "" {
+		port = "20000"
+	}
+
 	srv := &http.Server{
-		Addr: "0.0.0.0:20000",
+		Addr: "0.0.0.0:" + port,
 		// Good practice to set timeouts to avoid Slowloris attacks.
 		WriteTimeout: time.Second * 15,
 		ReadTimeout:  time.Second * 15,
@@ -114,7 +135,7 @@ func main() {
 		Handler:      r,
 	}
 
-	log.Println("Listening on 20003")
+	log.Println("Listening on " + port + "...")
 	log.Fatal(srv.ListenAndServe())
 }
 
