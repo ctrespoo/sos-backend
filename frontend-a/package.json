@@ -1,0 +1,20 @@
+{
+  "name": "frontend-a",
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "APP_URL='prod' astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/svelte": "^4.0.3",
+    "@astrojs/tailwind": "^5.0.2",
+    "astro": "^3.3.3",
+    "flowbite": "^1.8.1",
+    "svelte": "^4.2.2",
+    "tailwindcss": "^3.3.3"
+  }
+}

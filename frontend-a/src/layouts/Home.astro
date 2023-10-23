@@ -1,0 +1,18 @@
+---
+import SideBar from "../components/SideBar.svelte";
+---
+
+<html lang="pt-BR" class="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>Home</title>
+  </head>
+  <body>
+    <SideBar client:load>
+      <h1>TESTE</h1>
+    </SideBar>
+  </body>
+</html>

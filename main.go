@@ -34,9 +34,9 @@ func init() {
 	global.TokenAuth = jwtauth.New("HS256", []byte("secret"), nil) // replace with secret key
 }
 
-//go:generate bash -c "cd frontend && npm run build"
+//go:generate bash -c "cd frontend-a && npm run build"
 
-//go:embed frontend/build/*
+//go:embed frontend-a/build/*
 var svelteStatic embed.FS
 
 func main() {
@@ -112,7 +112,7 @@ func main() {
 		})
 	})
 
-	s, err := fs.Sub(svelteStatic, "frontend/build")
+	s, err := fs.Sub(svelteStatic, "frontend-a/build")
 	if err != nil {
 		log.Panicln(err)
 	}
