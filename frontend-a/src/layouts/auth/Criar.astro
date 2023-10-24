@@ -1,5 +1,6 @@
 ---
-
+import { ViewTransitions } from "astro:transitions";
+import TelaCriarConta from "../../components/auth/Criar.svelte";
 ---
 
 <html lang="pt-BR" class="dark">
@@ -9,8 +10,9 @@
     <meta name="generator" content={Astro.generator} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>Criar conta</title>
+    <ViewTransitions />
   </head>
   <body>
-    <h1>Criar conta</h1>
+    <TelaCriarConta client:only="svelte" />
   </body>
 </html>

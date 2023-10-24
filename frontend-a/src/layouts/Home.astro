@@ -1,4 +1,5 @@
 ---
+import { ViewTransitions } from "astro:transitions";
 import SideBar from "../components/SideBar.svelte";
 ---
 
@@ -9,10 +10,11 @@ import SideBar from "../components/SideBar.svelte";
     <meta name="generator" content={Astro.generator} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>Home</title>
+    <ViewTransitions />
   </head>
   <body>
     <SideBar client:only="svelte">
-      <h1>TESTE</h1>
+      <h1 class="text-white text-center">Home page</h1>
     </SideBar>
   </body>
 </html>

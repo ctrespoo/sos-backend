@@ -26,8 +26,8 @@
 </script>
 
 <main>
-  <Toaster />
   <div class="antialiased bg-gray-50 dark:bg-gray-900">
+    <Toaster />
     <nav
       class="bg-white border-b border-gray-200 px-4 py-2.5 dark:bg-gray-800 dark:border-gray-700 fixed left-0 right-0 top-0 z-50"
     >
@@ -67,10 +67,7 @@
             </svg>
             <span class="sr-only">Toggle sidebar</span>
           </button>
-          <a
-            href="https://flowbite.com"
-            class="flex items-center justify-between mr-4"
-          >
+          <a href="/" class="flex items-center justify-between mr-4">
             <img src="/favicon.svg" class="mr-3 h-8" alt="Flowbite Logo" />
             <span
               class="self-center text-2xl font-semibold whitespace-nowrap dark:text-white"
@@ -806,7 +803,7 @@
         <ul class="space-y-2">
           <li>
             <a
-              href="#"
+              href="/"
               class="flex items-center p-2 text-base font-medium text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group"
             >
               <svg
@@ -819,7 +816,7 @@
                 <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z" />
                 <path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z" />
               </svg>
-              <span class="ml-3">Overview</span>
+              <span class="ml-3">Home</span>
             </a>
           </li>
           <li>
@@ -901,7 +898,8 @@
                   clip-rule="evenodd"
                 />
               </svg>
-              <span class="flex-1 ml-3 text-left whitespace-nowrap">Sales</span>
+              <span class="flex-1 ml-3 text-left whitespace-nowrap">Vendas</span
+              >
               <svg
                 aria-hidden="true"
                 class="w-6 h-6"
@@ -919,9 +917,9 @@
             <ul id="dropdown-sales" class="hidden py-2 space-y-2">
               <li>
                 <a
-                  href="#"
+                  href="/produtos"
                   class="flex items-center p-2 pl-11 w-full text-base font-medium text-gray-900 rounded-lg transition duration-75 group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700"
-                  >Products</a
+                  >Produtos</a
                 >
               </li>
               <li>

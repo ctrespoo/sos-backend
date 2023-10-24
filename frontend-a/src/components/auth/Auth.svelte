@@ -4,7 +4,6 @@
 
   onMount(() => {
     firebaseAuth.auth().onAuthStateChanged(async (user) => {
-      console.log("local: ", window.location.pathname);
       if (
         !user &&
         !window.location.pathname.startsWith("/auth/login") &&
