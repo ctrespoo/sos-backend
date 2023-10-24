@@ -1,5 +1,7 @@
 ---
 import Home from "../layouts/Home.astro";
+import Auth from "../components/auth/Auth.svelte";
 ---
 
+<Auth client:only="svelte" />
 <Home />

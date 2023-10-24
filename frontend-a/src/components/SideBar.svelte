@@ -1,12 +1,32 @@
 <script lang="ts">
   import { initFlowbite } from "flowbite";
   import { onMount } from "svelte";
+  import { firebaseAuth } from "../lib/authFirebase";
+  import toast, { Toaster } from "svelte-french-toast";
   onMount(() => {
     initFlowbite();
   });
+  function sair() {
+    firebaseAuth
+      .auth()
+      .signOut()
+      .then(async () => {
+        toast.success("Deslogado com sucesso!", {
+          position: "top-right",
+        });
+        localStorage.removeItem("token");
+        window.location.href = "/auth/login";
+      })
+      .catch((error) => {
+        toast.error("Erro ao deslogar!", {
+          position: "top-right",
+        });
+      });
+  }
 </script>
 
 <main>
+  <Toaster />
   <div class="antialiased bg-gray-50 dark:bg-gray-900">
     <nav
       class="bg-white border-b border-gray-200 px-4 py-2.5 dark:bg-gray-800 dark:border-gray-700 fixed left-0 right-0 top-0 z-50"
@@ -51,15 +71,11 @@
             href="https://flowbite.com"
             class="flex items-center justify-between mr-4"
           >
-            <img
-              src="https://flowbite.s3.amazonaws.com/logo.svg"
-              class="mr-3 h-8"
-              alt="Flowbite Logo"
-            />
+            <img src="/favicon.svg" class="mr-3 h-8" alt="Flowbite Logo" />
             <span
               class="self-center text-2xl font-semibold whitespace-nowrap dark:text-white"
-              >Flowbite</span
-            >
+              >SOS do marceneiro
+            </span>
           </a>
           <form action="#" method="GET" class="hidden md:block md:pl-2">
             <label for="topbar-search" class="sr-only">Search</label>
@@ -739,9 +755,10 @@
             >
               <li>
                 <a
+                  on:click={sair}
                   href="#"
                   class="block py-2 px-4 text-sm hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
-                  >Sign out</a
+                  >Sair</a
                 >
               </li>
             </ul>
