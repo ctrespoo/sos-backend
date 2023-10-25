@@ -633,6 +633,8 @@
             <img
               class="w-8 h-8 rounded-full"
               src="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/avatars/michael-gough.png"
+              loading="lazy"
+              decoding="async"
               alt="user photo"
             />
           </button>

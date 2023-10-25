@@ -1,7 +1,6 @@
 <script lang="ts">
-  import firebase from "firebase/compat/app";
   import { url } from "../../lib/url";
-  import { firebaseAuth } from "../../lib/authFirebase";
+
   import toast, { Toaster } from "svelte-french-toast";
 
   let nome = "";

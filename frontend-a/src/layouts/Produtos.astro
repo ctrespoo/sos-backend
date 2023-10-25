@@ -1,5 +1,6 @@
 ---
-import SideBar from "../components/SideBar.svelte";
+import ProdutosGrid from "../model/ProdutosGrid.svelte";
+import SideBar from "../model/SideBar.svelte";
 import { ViewTransitions } from "astro:transitions";
 ---
 
@@ -13,7 +14,7 @@ import { ViewTransitions } from "astro:transitions";
   </head>
   <body>
     <SideBar client:only="svelte">
-      <h1 class="text-white text-center">Produtos</h1>
+      <ProdutosGrid client:only="svelte" />
     </SideBar>
   </body>
 </html>

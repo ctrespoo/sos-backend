@@ -1,7 +1,9 @@
 ---
-import Auth from "../components/auth/Auth.svelte";
 import ProdutoPage from "../layouts/Produtos.astro";
 ---
 
-<Auth client:only="svelte" />
+<script>
+  import "../model/auth/Auth.ts";
+</script>
+
 <ProdutoPage />

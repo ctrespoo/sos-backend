@@ -1,7 +1,9 @@
 ---
 import TelaCriarConta from "../../layouts/auth/Criar.astro";
-import Auth from "../../components/auth/Auth.svelte";
 ---
 
-<Auth client:only="svelte" />
+<script>
+  import "../../model/auth/Auth.ts";
+</script>
+
 <TelaCriarConta />

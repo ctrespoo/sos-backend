@@ -2,10 +2,8 @@ package produtos
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	interno "sos/backend/interno/db"
-	"strings"
 
 	"cloud.google.com/go/storage"
 	"firebase.google.com/go/v4/auth"
@@ -17,30 +15,30 @@ func PegarProdutoUnico(db *interno.Queries, app *auth.Client, bucket *storage.Bu
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
-		tokenC, err := r.Cookie("session")
+		// tokenC, err := r.Cookie("session")
 
-		token := r.Header.Get("Authorization")
-		token = strings.Replace(token, "Bearer ", "", 1)
-		if token == "" {
-			if err != nil {
-				log.Println(err)
-				w.WriteHeader(401)
-				w.Write([]byte(`{"message": "Token não fornecido"}`))
-				return
+		// token := r.Header.Get("Authorization")
+		// token = strings.Replace(token, "Bearer ", "", 1)
+		// if token == "" {
+		// 	if err != nil {
+		// 		log.Println(err)
+		// 		w.WriteHeader(401)
+		// 		w.Write([]byte(`{"message": "Token não fornecido"}`))
+		// 		return
 
-			}
-			token = tokenC.Value
-		}
+		// 	}
+		// 	token = tokenC.Value
+		// }
 
-		user, err := app.VerifyIDToken(r.Context(), token)
-		if err != nil {
-			w.WriteHeader(401)
-			w.Write([]byte(`{"message": "Token inválido"}`))
-			return
-		}
+		// user, err := app.VerifyIDToken(r.Context(), token)
+		// if err != nil {
+		// 	w.WriteHeader(401)
+		// 	w.Write([]byte(`{"message": "Token inválido"}`))
+		// 	return
+		// }
 
-		role := user.Claims["role"]
-		log.Println(role)
+		// role := user.Claims["role"]
+		// log.Println(role)
 		// if role != "ADMIN" && role != "DONO" {
 		// 	w.WriteHeader(401)
 		// 	w.Write([]byte(`{"message": "Usuário não autorizado"}`))
