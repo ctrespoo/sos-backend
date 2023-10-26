@@ -39,6 +39,9 @@ func init() {
 //go:embed frontend-a/build/*
 var svelteStatic embed.FS
 
+//go:embed firebase.json
+var firebaseJson embed.FS
+
 func main() {
 	ctx := context.Background()
 
@@ -60,10 +63,14 @@ func main() {
 
 	dbtx := interno.New(db)
 
+	f, err := firebaseJson.ReadFile("firebase.json")
+	if err != nil {
+		log.Fatal(err)
+	}
 	config := &firebase.Config{
 		StorageBucket: "sos-do-maceneiro.appspot.com",
 	}
-	opt := option.WithCredentialsFile("./firebase.json")
+	opt := option.WithCredentialsJSON(f)
 	app, err := firebase.NewApp(ctx, config, opt)
 	if err != nil {
 		log.Fatal(err)
