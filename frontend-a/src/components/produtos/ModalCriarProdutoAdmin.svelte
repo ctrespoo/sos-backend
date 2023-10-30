@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Categoria } from "../../lib/types/produtos";
+  import { url } from "../../lib/url";
   import {
     Button,
     Modal,
@@ -23,17 +24,75 @@
       });
     }
   } else {
-    console.log("Erro ao carregar categorias p");
+    console.log("Erro ao carregar categorias");
     toast.error("Erro ao carregar categorias");
+  }
+
+  function pegarFormulario(
+    e: SubmitEvent & { currentTarget: EventTarget & HTMLFormElement }
+  ) {
+    const data = {
+      nome: e.currentTarget.nome.value as string,
+      descricao: e.currentTarget.descricao.value as string,
+      peso: Number(e.currentTarget.peso.value),
+      preco: Number(e.currentTarget.preco.value),
+      categoria: selectedCategory,
+      unidadeMedida: e.currentTarget.unidadeMedida.value as string,
+      quantidadePacote: Number(e.currentTarget.qtPacote.value),
+      ativo: e.currentTarget.ativo.value === "on",
+    };
+    const imagem = e.currentTarget.imagem.files[0] as File;
+
+    const sendFormData = new FormData();
+    sendFormData.append("imagem", imagem);
+    sendFormData.append("produto", JSON.stringify(data));
+
+    const token = localStorage.getItem("token");
+
+    fetch(url.produtos, {
+      method: "POST",
+      mode: "cors",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: sendFormData,
+    })
+      .then(async (res) => {
+        if (res.status === 201) {
+          console.log(await res.text());
+          toast.success("Produto criado com sucesso");
+          formModal = false;
+          return;
+        }
+        if (res.status === 200) {
+          console.log(await res.text());
+          toast.success("Produto criado com sucesso");
+          formModal = false;
+          return;
+        }
+        toast.error(await res.text());
+      })
+      .catch(async (err) => {
+        toast.error("Erro ao criar produto");
+        console.log(err);
+      });
   }
 </script>
 
-<Modal bind:open={formModal} size="md" autoclose={false} class="w-full">
-  <form id="criarProduto" class="flex flex-col space-y-6">
+<Modal
+  bind:open={formModal}
+  title="Criar Produto"
+  size="md"
+  autoclose={false}
+  class="w-full shadow-lg shadow-slate-950"
+>
+  <form
+    id="criarProduto"
+    class="flex flex-col space-y-6"
+    on:submit|preventDefault={pegarFormulario}
+  >
     <!-- Modal body -->
-    <h3 class="mb-4 text-xl font-medium text-gray-900 dark:text-white">
-      Criar Produto
-    </h3>
+
     <div class="grid gap-4 mb-4 sm:grid-cols-3">
       <div class="col-span-3">
         <label
@@ -53,14 +112,14 @@
       </div>
       <div>
         <label
-          for="unidade-medida"
+          for="unidadeMedida"
           class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
           >Unidade de medida</label
         >
         <select
-          id="unidade-medida"
+          id="unidadeMedida"
           required
-          name="unidade-medida"
+          name="unidadeMedida"
           class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
         >
           <option selected value="G">G</option>
@@ -69,15 +128,15 @@
       </div>
       <div>
         <label
-          for="qt-pacote"
+          for="qtPacote"
           class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
           >Quantidade por pacote</label
         >
         <input
           value={1}
           type="number"
-          name="qt-pacote"
-          id="qt-pacote"
+          name="qtPacote"
+          id="qtPacote"
           class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
           placeholder="Nome do produto"
           required
@@ -120,21 +179,22 @@
       <div class="col-span-2">
         <label
           class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-          for="file_input">Enviar imagem</label
+          for="imagem">Enviar imagem</label
         >
         <input
           class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400"
-          aria-describedby="file_input_help"
-          id="file_input"
+          aria-describedby="imagem_help"
+          id="imagem"
           name="imagem"
           type="file"
+          accept="image/*"
           required
         />
         <p
           class="mt-1 text-sm text-gray-500 dark:text-gray-300"
-          id="file_input_help"
+          id="imagem_help"
         >
-          PNG, JPG or WEBP (MAX. 800x400px).
+          PNG, JPEG (MAX/RECOMENDADO. 512x512px).
         </p>
       </div>
       <div class="col-span-3">
@@ -184,22 +244,24 @@
         >
       </div>
     </div>
-    <button
-      type="submit"
-      class="text-white inline-flex items-center bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800"
-    >
-      <svg
-        class="mr-1 -ml-1 w-6 h-6"
-        fill="currentColor"
-        viewBox="0 0 20 20"
-        xmlns="http://www.w3.org/2000/svg"
-        ><path
-          fill-rule="evenodd"
-          d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
-          clip-rule="evenodd"
-        /></svg
+    <div class="flex items-center space-x-4">
+      <button
+        type="submit"
+        class="text-white inline-flex items-center bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800"
       >
-      Add new product
-    </button>
+        <svg
+          class="mr-1 -ml-1 w-6 h-6"
+          fill="currentColor"
+          viewBox="0 0 20 20"
+          xmlns="http://www.w3.org/2000/svg"
+          ><path
+            fill-rule="evenodd"
+            d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+            clip-rule="evenodd"
+          /></svg
+        >
+        Adicionar Produto
+      </button>
+    </div>
   </form>
 </Modal>

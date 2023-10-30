@@ -3,16 +3,24 @@ package produtos
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"image"
 	"io"
 	"log"
+	"mime/multipart"
 	"net/http"
 	interno "sos/backend/interno/db"
 	"strings"
 
+	_ "image/jpeg"
+	_ "image/png"
+
 	"cloud.google.com/go/storage"
 	"firebase.google.com/go/v4/auth"
+	"github.com/chai2010/webp"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
+	"golang.org/x/image/draw"
 )
 
 type Produto struct {
@@ -32,25 +40,14 @@ func CriaProduto(db *interno.Queries, app *auth.Client, bucket *storage.BucketHa
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
-		tokenC, err := r.Cookie("session")
-		if err != nil {
-			log.Println(err)
+		token := r.Header.Get("Authorization")
+		token = strings.Replace(token, "Bearer ", "", 1)
+
+		if token == "" {
 			w.WriteHeader(401)
 			w.Write([]byte(`{"message": "Token não fornecido"}`))
 			return
-		}
 
-		token := r.Header.Get("Authorization")
-		token = strings.Replace(token, "Bearer ", "", 1)
-		if token == "" {
-			token = tokenC.Value
-
-			if token == "" {
-				w.WriteHeader(401)
-				w.Write([]byte(`{"message": "Token não fornecido"}`))
-				return
-
-			}
 		}
 
 		user, err := app.VerifyIDToken(r.Context(), token)
@@ -96,8 +93,9 @@ func CriaProduto(db *interno.Queries, app *auth.Client, bucket *storage.BucketHa
 			return
 		}
 		defer imagem.Close()
-		nomeImagemProduto := "produtos/" + idProduto.String() + ".png"
-		imgBytes, err := io.ReadAll(imagem)
+		nomeImagemProduto := "produtos/" + idProduto.String() + ".webp"
+
+		imgBytes, err := converterParaWebp(imagem) //io.ReadAll(imagem)
 		if err != nil {
 			log.Println(err)
 			w.WriteHeader(500)
@@ -151,7 +149,40 @@ func CriaProduto(db *interno.Queries, app *auth.Client, bucket *storage.BucketHa
 			}
 		})
 
+		w.WriteHeader(http.StatusCreated)
 		w.Write([]byte(""))
-		w.WriteHeader(201)
 	}
+}
+
+func converterParaWebp(file multipart.File) (webpBytes []byte, err error) {
+	// Decodificar a imagem no formato apropriado (JPEG, PNG, GIF, etc.)
+	_, err = file.Seek(0, 0)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao buscar o início do arquivo: %v", err)
+	}
+
+	img, _, err := image.Decode(file)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao decodificar a imagem: %v", err)
+	}
+	defer file.Close()
+	img = resizeImage(img, 512, 512)
+	// Converter a imagem para WebP otimizado
+	var webpBuffer bytes.Buffer
+	err = webp.Encode(&webpBuffer, img, &webp.Options{Quality: 80, Lossless: false})
+	if err != nil {
+		return nil, fmt.Errorf("erro ao converter a imagem para WebP: %v", err)
+	}
+
+	// Armazenar o resultado como []byte em uma variável
+	webpBytes = webpBuffer.Bytes()
+
+	return webpBytes, nil
+}
+
+func resizeImage(img image.Image, width, height int) image.Image {
+	bounds := img.Bounds()
+	newImage := image.NewRGBA(image.Rect(0, 0, width, height))
+	draw.CatmullRom.Scale(newImage, newImage.Bounds(), img, bounds, draw.Src, nil)
+	return newImage
 }

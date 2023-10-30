@@ -97,7 +97,7 @@ SET "nome" = $1,
 WHERE "id" = $8;
 -- name: AtualizarImagemProduto :exec
 UPDATE "produtos"
-SET "imagem" = 'https://firebasestorage.googleapis.com/v0/b/sos-do-maceneiro.appspot.com/o/produtos%2F' || "id" || '.png?alt=media'
+SET "imagem" = 'https://firebasestorage.googleapis.com/v0/b/sos-do-maceneiro.appspot.com/o/produtos%2F' || "id" || '.webp?alt=media'
 WHERE "id" = $1;
 -- name: InserirCategoriaProdutoPeloNome :batchexec
 INSERT INTO "_CategoriaToProduto" ("A", "B")
